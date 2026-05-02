@@ -104,14 +104,16 @@ Required variables:
 - OLLAMA_URL
 - OLLAMA_MODEL
 - OLLAMA_TIMEOUT_SECONDS
-- OPENROUTER_API_KEY
-- OPENROUTER_URL
-- OPENROUTER_MODEL
-- OPENROUTER_TIMEOUT_SECONDS
+- LLM_BASE_URL
+- LLM_API_KEY
+- LLM_MODEL
+- LLM_TEMPERATURE
+- LLM_MAX_TOKENS
+- LLM_TIMEOUT_SECONDS
 
-Default fallback model:
+Default cloud model:
 
-- mistralai/mistral-7b-instruct
+- meta-llama/llama-3-8b-instruct (temperature: 0.2, max_tokens: 220)
 
 ## Run
 
@@ -123,21 +125,22 @@ The app runs by default at http://localhost:8501
 
 ## Hybrid LLM Behavior
 
-The central function in llm.py is call_llm(prompt: str) -> str.
+The central function in llm.py is `call_llm(prompt: str) -> str`.
 
-It does the following:
+It implements a simple local-first strategy:
 
-1. Calls local Ollama with a short timeout.
-2. If local fails, calls OpenRouter.
-3. Logs which provider was used.
-4. Returns a safe fallback message if both fail.
+1. Attempts to call local Ollama with 4-second timeout.
+2. If local fails (connection error, timeout, invalid response), catches exception.
+3. Falls back to cloud LLM via OpenRouter using meta-llama/llama-3-8b-instruct.
+4. Logs which provider was used.
+5. Returns "LLM unavailable" if both providers fail.
 
-Functions using call_llm:
+Public API functions using `call_llm()`:
 
-- detect_intent(text)
-- generate_code(prompt)
-- extract_filename(text)
-- summarize_llm(text)
+- `detect_intent(text)` - Classifies user request into: create_file, write_code, summarize, or chat
+- `generate_code(prompt)` - Generates Python code from natural language
+- `extract_filename(text)` - Extracts or suggests a filename
+- `summarize_llm(text)` - Summarizes text
 
 ## Usage Flow
 
@@ -160,20 +163,22 @@ python test_tools.py
 
 ### Local model not responding
 
-- Check Ollama is running.
-- Verify OLLAMA_URL and model name in .env.
-- Increase OLLAMA_TIMEOUT_SECONDS if needed.
+- Check Ollama is running: `ollama serve`
+- Verify OLLAMA_URL and model name in .env
+- Increase OLLAMA_TIMEOUT_SECONDS if network is slow
 
 ### Cloud fallback not working
 
-- Verify OPENROUTER_API_KEY is set.
-- Verify OPENROUTER_MODEL is valid.
-- Check network access to OpenRouter endpoint.
+- Verify LLM_API_KEY is set in .env
+- Verify LLM_BASE_URL is correct (https://openrouter.ai/api/v1)
+- Verify LLM_MODEL is valid (meta-llama/llama-3-8b-instruct)
+- Check network access to OpenRouter endpoint
+- Inspect logs for specific error messages
 
 ### Import errors in editor
 
-- Ensure VS Code is using venv/bin/python as interpreter.
-- Reinstall dependencies with pip install -r requirements.txt.
+- Ensure VS Code is using venv/bin/python as interpreter
+- Reinstall dependencies: `pip install -r requirements.txt`
 
 ## Security Notes
 
