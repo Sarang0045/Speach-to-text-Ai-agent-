@@ -1,8 +1,14 @@
 import streamlit as st
+from llm import detect_intent, extract_filename, generate_code, summarize_llm
 from stt import transcribe
-from llm import detect_intent, generate_code, summarize_llm, extract_filename
-from tools import create_file, write_code
 from streamlit_mic_recorder import mic_recorder
+from tools import create_file, write_code
+
+
+def _save_temp_audio(path, data):
+    with open(path, "wb") as file_obj:
+        file_obj.write(data)
+    return path
 
 st.title("🎤 Voice-Controlled AI Agent")
 st.subheader("🎤 Record Your Voice")
@@ -20,22 +26,18 @@ audio_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
 temp_file_path = None
 
 if audio_file is not None:
-    file_extension = audio_file.name.split(".")[-1]
-    temp_file_path = f"temp.{file_extension}"
-
-    with open(temp_file_path, "wb") as f:
-        f.write(audio_file.read())
-
+    extension = audio_file.name.split(".")[-1]
+    temp_file_path = _save_temp_audio(f"temp.{extension}", audio_file.read())
 elif audio_data is not None:
-    temp_file_path = "recorded.wav"
-
-    with open(temp_file_path, "wb") as f:
-        f.write(audio_data["bytes"])
+    temp_file_path = _save_temp_audio("recorded.wav", audio_data["bytes"])
 
 if temp_file_path is not None:
     st.subheader("📝 Transcription")
     text = transcribe(temp_file_path)
     st.write(text)
+
+    if text.startswith("Error:"):
+        st.stop()
 
     st.subheader("🧠 Detected Intent")
     intent = detect_intent(text)
@@ -67,20 +69,15 @@ if temp_file_path is not None:
         result = "Chat response (not implemented yet)"
         st.write(result)
 
-    if intent in ["create_file", "write_code"]:
-        if st.button("✅ Confirm Action"):
-
-            try:
-                if intent == "create_file":
-                    result = create_file(filename)
-
-                elif intent == "write_code":
-                    result = write_code(filename, code)
-
-                st.success(result)
-
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
+    if intent in {"create_file", "write_code"} and st.button("✅ Confirm Action"):
+        try:
+            if intent == "create_file":
+                result = create_file(filename)
+            else:
+                result = write_code(filename, code)
+            st.success(result)
+        except Exception as exc:
+            st.error(f"Error: {exc}")
 
     st.subheader("✅ Final Output")
 
