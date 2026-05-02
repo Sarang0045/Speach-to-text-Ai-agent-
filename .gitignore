@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+.env
+
+.streamlit/
+recorded.wav
+temp.wav
+temp.mp3
+temp.m4a
+
+output/*
+!output/.gitkeep

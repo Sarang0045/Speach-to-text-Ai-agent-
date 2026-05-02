@@ -5,8 +5,6 @@ from tools import create_file, write_code
 from streamlit_mic_recorder import mic_recorder
 
 st.title("🎤 Voice-Controlled AI Agent")
-
-# ---------------- 🎤 MIC RECORDING ----------------
 st.subheader("🎤 Record Your Voice")
 
 audio_data = mic_recorder(
@@ -14,17 +12,11 @@ audio_data = mic_recorder(
     stop_prompt="Stop Recording",
     key="recorder"
 )
-
-# Show recorded audio (optional)
 if audio_data is not None:
     st.audio(audio_data["bytes"])
 
-
-# ---------------- 📁 FILE UPLOAD ----------------
 audio_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
 
-
-# ---------------- 🎯 HANDLE BOTH INPUTS ----------------
 temp_file_path = None
 
 if audio_file is not None:
@@ -40,28 +32,21 @@ elif audio_data is not None:
     with open(temp_file_path, "wb") as f:
         f.write(audio_data["bytes"])
 
-
-# ---------------- 🚀 RUN PIPELINE ----------------
 if temp_file_path is not None:
-
-    # STEP 1: STT
     st.subheader("📝 Transcription")
     text = transcribe(temp_file_path)
     st.write(text)
 
-    # STEP 2: Intent
     st.subheader("🧠 Detected Intent")
     intent = detect_intent(text)
     st.write(intent)
 
-    # STEP 3: Action Plan
     st.subheader("⚙️ Action Plan")
 
     filename = None
     code = None
     result = None
 
-    # -------- PREPARE --------
     if intent == "create_file":
         filename = extract_filename(text)
         st.write(f"📁 File to be created: {filename}")
@@ -82,7 +67,6 @@ if temp_file_path is not None:
         result = "Chat response (not implemented yet)"
         st.write(result)
 
-    # -------- CONFIRMATION --------
     if intent in ["create_file", "write_code"]:
         if st.button("✅ Confirm Action"):
 
@@ -98,7 +82,6 @@ if temp_file_path is not None:
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-    # -------- FINAL OUTPUT --------
     st.subheader("✅ Final Output")
 
     if result:
